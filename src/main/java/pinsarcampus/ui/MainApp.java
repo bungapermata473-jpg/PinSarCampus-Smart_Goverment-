@@ -1,93 +1,155 @@
 package pinsarcampus.ui;
 
-import pinsarcampus.model.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
-public class MainApp {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        List<Inventaris> daftarInventaris = new ArrayList<>();
-        List<Peminjam> daftarPeminjam = new ArrayList<>();
+public class MainApp extends Application {
 
-        // Inisialisasi Data Awal Inventaris Kampus
-        daftarInventaris.add(new Elektronik("Proyektor Epson EB-X400"));
-        daftarInventaris.add(new Elektronik("Kamera DSLR Canon EOS 80D"));
-        daftarInventaris.add(new Ruangan("Aula Sekretariat HIMA / UKM", 75));
+    private ObservableList<InventarisModelView> dataInventaris = FXCollections.observableArrayList();
 
-        boolean berjalan = true;
-        System.out.println("==================================================");
-        System.out.println("    SELAMAT DATANG DI SISTEM PINSARCAMPUS        ");
-        System.out.println("==================================================");
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("PinSarCampus - Sistem Peminjaman Sarana Kampus (JavaFX)");
 
-        while (berjalan) {
-            System.out.println("\n--- MENU UTAMA PINSARCAMPUS ---");
-            System.out.println("1. Lihat Daftar Inventaris & Ruangan");
-            System.out.println("2. Registrasi Peminjam Baru (Mahasiswa/HIMA/UKM)");
-            System.out.println("3. Lihat Daftar Peminjam Terdaftar");
-            System.out.println("4. Keluar Aplikasi");
-            System.out.print("Pilih menu (1-4): ");
+        // Inisialisasi Data Awal
+        dataInventaris.add(new InventarisModelView("INV001", "Proyektor Epson", "Elektronik", "Tersedia"));
+        dataInventaris.add(new InventarisModelView("INV002", "Kamera DSLR Canon", "Elektronik", "Tersedia"));
+        dataInventaris.add(new InventarisModelView("INV003", "Aula Sekretariat HIMA", "Ruangan", "Tersedia"));
 
-            if (!scanner.hasNextInt()) {
-                System.out.println("Input tidak valid! Harap masukkan angka.");
-                scanner.next();
-                continue;
+        // Pembuatan Komponen Tabel
+        TableView<InventarisModelView> table = new TableView<>();
+        table.setItems(dataInventaris);
+
+        TableColumn<InventarisModelView, String> colId = new TableColumn<>("ID Barang");
+        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colId.setPrefWidth(100);
+
+        TableColumn<InventarisModelView, String> colNama = new TableColumn<>("Nama Barang");
+        colNama.setCellValueFactory(new PropertyValueFactory<>("nama"));
+        colNama.setPrefWidth(200);
+
+        TableColumn<InventarisModelView, String> colJenis = new TableColumn<>("Jenis");
+        colJenis.setCellValueFactory(new PropertyValueFactory<>("jenis"));
+        colJenis.setPrefWidth(120);
+
+        TableColumn<InventarisModelView, String> colStatus = new TableColumn<>("Status");
+        colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+        colStatus.setPrefWidth(120);
+
+        table.getColumns().addAll(colId, colNama, colJenis, colStatus);
+
+        // Form Input
+        GridPane formGrid = new GridPane();
+        formGrid.setPadding(new Insets(10, 10, 10, 10));
+        formGrid.setVgap(8);
+        formGrid.setHgap(10);
+
+        Label lblNama = new Label("Nama Barang/Ruangan:");
+        TextField tfNama = new TextField();
+        tfNama.setPromptText("Contoh: Speaker Aktif");
+
+        Label lblJenis = new Label("Jenis Sarana:");
+        ComboBox<String> cbJenis = new ComboBox<>();
+        cbJenis.getItems().addAll("Elektronik", "Ruangan");
+        cbJenis.setValue("Elektronik");
+
+        Button btnTambah = new Button("Tambah Inventaris");
+        Button btnHapus = new Button("Hapus Terpilih");
+
+        formGrid.add(lblNama, 0, 0);
+        formGrid.add(tfNama, 1, 0);
+        formGrid.add(lblJenis, 0, 1);
+        formGrid.add(cbJenis, 1, 1);
+        formGrid.add(btnTambah, 1, 2);
+        formGrid.add(btnHapus, 2, 2);
+
+        // Event Handling & Validasi Alert
+        btnTambah.setOnAction(e -> {
+            try {
+                String nama = tfNama.getText().trim();
+                String jenis = cbJenis.getValue();
+
+                if (nama.isEmpty()) {
+                    Alert alert = new Alert(Alert.AlertType.WARNING);
+                    alert.setTitle("Peringatan Validasi");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Nama barang tidak boleh kosong!");
+                    alert.showAndWait();
+                    return;
+                }
+
+                String idBaru = "INV0" + (dataInventaris.size() + 1);
+                dataInventaris.add(new InventarisModelView(idBaru, nama, jenis, "Tersedia"));
+                tfNama.clear();
+
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Sukses");
+                successAlert.setHeaderText(null);
+                successAlert.setContentText("Data inventaris berhasil ditambahkan!");
+                successAlert.showAndWait();
+
+            } catch (Exception ex) {
+                Alert errAlert = new Alert(Alert.AlertType.ERROR);
+                errAlert.setTitle("Error");
+                errAlert.setContentText("Terjadi kesalahan sistem: " + ex.getMessage());
+                errAlert.showAndWait();
             }
+        });
 
-            int pilihan = scanner.nextInt();
-            scanner.nextLine(); // Clear buffer
-
-            switch (pilihan) {
-                case 1:
-                    System.out.println("\n--- DAFTAR INVENTARIS & RUANGAN ---");
-                    for (Inventaris inv : daftarInventaris) {
-                        System.out.println("[" + inv.getId() + "] " + inv.getNama() 
-                            + " | Jenis: " + inv.getJenis() 
-                            + " | Maks Durasi: " + inv.getMaksDurasiHari() + " hari"
-                            + " | Status: " + (inv.isTersedia() ? "Tersedia" : "Dipinjam"));
-                    }
-                    break;
-
-                case 2:
-                    System.out.println("\n--- REGISTRASI PEMINJAM PINSARCAMPUS ---");
-                    System.out.print("Masukkan Nama Lengkap: ");
-                    String nama = scanner.nextLine();
-                    System.out.print("Masukkan Password: ");
-                    String pass = scanner.nextLine();
-                    System.out.print("Masukkan Asal Organisasi (HIMA/UKM): ");
-                    String org = scanner.nextLine();
-
-                    Peminjam peminjamBaru = new Peminjam(nama, pass, org);
-                    daftarPeminjam.add(peminjamBaru);
-
-                    System.out.println("\n[SUKSES] Peminjam berhasil terdaftar di PinSarCampus!");
-                    System.out.println("ID User     : " + peminjamBaru.getId());
-                    System.out.println("Nama        : " + peminjamBaru.getNama());
-                    System.out.println("Peran       : " + peminjamBaru.getPeran());
-                    System.out.println("Organisasi  : " + peminjamBaru.getOrganisasi());
-                    break;
-
-                case 3:
-                    System.out.println("\n--- DAFTAR PEMINJAM TERDAFTAR ---");
-                    if (daftarPeminjam.isEmpty()) {
-                        System.out.println("Belum ada peminjam yang terdaftar.");
-                    } else {
-                        for (Peminjam p : daftarPeminjam) {
-                            System.out.println("- [" + p.getId() + "] " + p.getNama() + " (" + p.getOrganisasi() + ")");
-                        }
-                    }
-                    break;
-
-                case 4:
-                    berjalan = false;
-                    System.out.println("\nTerima kasih telah menggunakan PinSarCampus!");
-                    break;
-
-                default:
-                    System.out.println("Pilihan menu tidak valid! Silakan pilih 1 - 4.");
+        btnHapus.setOnAction(e -> {
+            InventarisModelView selectedItem = table.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) {
+                dataInventaris.remove(selectedItem);
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Peringatan");
+                alert.setHeaderText(null);
+                alert.setContentText("Pilih baris pada tabel yang ingin dihapus terlebih dahulu!");
+                alert.showAndWait();
             }
+        });
+
+        // Layout Utama
+        VBox root = new VBox(10);
+        root.setPadding(new Insets(15));
+        Label titleLabel = new Label("DASHBOARD MANAJEMEN INVENTARIS PINSARCAMPUS");
+        titleLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+
+        root.getChildren().addAll(titleLabel, table, formGrid);
+
+        Scene scene = new Scene(root, 580, 480);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public static class InventarisModelView {
+        private final String id;
+        private final String nama;
+        private final String jenis;
+        private final String status;
+
+        public InventarisModelView(String id, String nama, String jenis, String status) {
+            this.id = id;
+            this.nama = nama;
+            this.jenis = jenis;
+            this.status = status;
         }
-        scanner.close();
+
+        public String getId() { return id; }
+        public String getNama() { return nama; }
+        public String getJenis() { return jenis; }
+        public String getStatus() { return status; }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
